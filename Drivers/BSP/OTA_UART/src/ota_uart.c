@@ -131,7 +131,7 @@ void OTA_UART_IRQHandler(void)
         }
 
         // 6. 物理缓冲区空间管理
-        // 判断剩余空间是否足够存放下一个最大包 (OTA_RX_MAX)
+        // 判断剩余空间是否足够存放下一个最大包 (OTA_RX_MAX)M
         if (OTA_RX_SIZE - ota_uart_cb.URxcounter >= OTA_RX_MAX) {
             // 空间足够：下一个包接着当前位置存
             ota_uart_cb.URxDataIN->start = &ota_rxbuff[ota_uart_cb.URxcounter];

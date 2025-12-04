@@ -44,13 +44,22 @@ extern "C" {
 #define F103RC_A_SPAGE F103RC_B_PAGE_NUM  // A区起始扇区标号
 #define F103RC_A_SADDR (F103RC_FALSH_SADDR + F103RC_A_SPAGE * F103RC_PAGE_SIZE) // A区flash起始地址
 
-#define OTA_SET_FLAG 0XAABB1122
+#define UPDATA_A_FLAG 0X00000001 // 更新标志位
+
+#define OTA_SET_FLAG 0XAABB1122 // OTA校验码
+
+/**
+ * @brief OTA信息结构体
+*/
 typedef struct 
 {
-    uint32_t ota_flag;
+    uint32_t ota_flag; // OTA标志位
     uint32_t firlen[11];
 }OTA_InfoCB;
 
+/**
+ * @brief 外部flash管理结构体
+*/
 typedef struct 
 {
     uint8_t updatabuff[F103RC_PAGE_SIZE];
@@ -61,6 +70,7 @@ typedef struct
 
 extern OTA_InfoCB OTA_Info;
 extern updata_cb updataA;
+extern uint32_t boot_state_flag;
 
 /* USER CODE END ET */
 

@@ -178,13 +178,18 @@ void at24cxx_write(uint16_t addr, uint8_t *pbuf, uint16_t datalen)
     }
 }
 
-
+/**
+ * @brief 读取OTA信息结构体
+*/
 void at24cxx_read_otaflag(void)
 {
     memset(&OTA_Info, 0, OTA_INFOCB_SIZE);
     at24cxx_read(0, (uint8_t *)&OTA_Info, OTA_INFOCB_SIZE);
 }
 
+/**
+ * @brief 写入OTA信息结构体
+*/
 void at24cxx_write_otainfo(void)
 {
     uint8_t *wptr;

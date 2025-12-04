@@ -56,6 +56,7 @@ typedef struct
 }UCB_CB; 
 
 extern UCB_CB ota_uart_cb;                      // 接收控制块（管理接收逻辑的核心结构体）
+extern uint8_t ota_rxbuff[OTA_RX_SIZE];         // 物理接收缓冲区
 
 // 外部接口函数
 void ota_uart_init(uint32_t bandrate);

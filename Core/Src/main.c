@@ -26,6 +26,7 @@
 #include "ota_uart.h"
 #include "delay.h"
 #include "myiic.h"
+#include "norflash.h"
 #include "24cxx.h"
 #include "stmflash.h"
 #include "bootloader.h"
@@ -51,6 +52,7 @@
 /* USER CODE BEGIN PV */
 OTA_InfoCB OTA_Info;
 updata_cb updataA;
+uint32_t boot_state_flag;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -71,7 +73,7 @@ void SystemClock_Config(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-
+  uint32_t i = 0;
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -97,6 +99,7 @@ int main(void)
   ota_uart_init(921600);
   ota_uart_cb_init();
   iic_init();
+  norflash_init();
   at24cxx_read_otaflag();
   bootloader_brance();
   /* USER CODE END 2 */
@@ -105,6 +108,31 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+    // if ((boot_state_flag & UPDATA_A_FLAG) != 0) {
+    //   printf("长度%d字节\r\n", OTA_Info.firlen[updataA.w25q64_block_num]);
+    //   if (OTA_Info.firlen[updataA.w25q64_block_num] % 4 == 0) {
+    //     for (i = 0; i < OTA_Info.firlen[updataA.w25q64_block_num] / F103RC_PAGE_SIZE; i++) {
+    //       norflash_read(updataA.updatabuff, i * 2048 + updataA.w25q64_block_num * 64 * 1024, F103RC_PAGE_SIZE);
+    //       stmflash_write(F103RC_A_SADDR + i * F103RC_PAGE_SIZE, (uint16_t *)updataA.updatabuff, F103RC_PAGE_SIZE);
+    //     }
+
+    //     if (OTA_Info.firlen[updataA.w25q64_block_num] % 1024 != 0) {
+    //       norflash_read(updataA.updatabuff, i * 2048 + updataA.w25q64_block_num * 64 * 1024, OTA_Info.firlen[updataA.w25q64_block_num] % 1024);
+    //       stmflash_write(F103RC_A_SADDR + i * F103RC_PAGE_SIZE, (uint16_t *)updataA.updatabuff, OTA_Info.firlen[updataA.w25q64_block_num] % 1024);
+    //     }
+
+    //     if (updataA.w25q64_block_num == 0) {
+    //       OTA_Info.ota_flag = 0;
+    //       at24cxx_write_otainfo();
+    //     }
+    //     NVIC_SystemReset();
+    //   }
+    //   else {
+    //   printf("长度错误\r\n");
+    //   boot_state_flag &= ~(UPDATA_A_FLAG);      
+    //   } 
+    // }
+    
     // if (ota_uart_cb.URxDataOUT != ota_uart_cb.URxDataIN) {
     //   printf("本次接收的字节数为%d\r\n", ota_uart_cb.URxDataOUT->end - ota_uart_cb.URxDataOUT->start + 1);
     //   for (int i = 0; i < (ota_uart_cb.URxDataOUT->end - ota_uart_cb.URxDataOUT->start + 1); i++) {
