@@ -162,6 +162,25 @@ void stmflash_write(uint32_t waddr, uint16_t *pbuf, uint16_t length)
     HAL_FLASH_Lock(); /* 上锁 */
 }
 
+/**
+ * @brief 内部flash擦除指定数量页
+ * @param  addr 起始地址
+ * @param  pages 页数
+*/
+void stmflash_erase(uint32_t addr, uint8_t pages)
+{
+    HAL_FLASH_Unlock();                       /* FLASH解锁 */
+    FLASH_EraseInitTypeDef flash_eraseop;
+    uint32_t erase_addr;   /* 擦除错误，这个值为发生错误的扇区地址 */
+    
+    flash_eraseop.TypeErase = FLASH_TYPEERASE_PAGES;        /* 选择面擦除 */
+    flash_eraseop.Banks = FLASH_BANK_1;
+    flash_eraseop.NbPages = pages;
+    flash_eraseop.PageAddress = addr;
+    HAL_FLASHEx_Erase( &flash_eraseop, &erase_addr);
+    HAL_FLASH_Lock(); /* 上锁 */
+}
+
 /******************************************************************************************/
 /* 测试用代码 */
 

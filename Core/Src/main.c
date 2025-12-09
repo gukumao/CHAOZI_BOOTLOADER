@@ -108,42 +108,71 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    // if ((boot_state_flag & UPDATA_A_FLAG) != 0) {
-    //   printf("长度%d字节\r\n", OTA_Info.firlen[updataA.w25q64_block_num]);
-    //   if (OTA_Info.firlen[updataA.w25q64_block_num] % 4 == 0) {
-    //     for (i = 0; i < OTA_Info.firlen[updataA.w25q64_block_num] / F103RC_PAGE_SIZE; i++) {
-    //       norflash_read(updataA.updatabuff, i * 2048 + updataA.w25q64_block_num * 64 * 1024, F103RC_PAGE_SIZE);
-    //       stmflash_write(F103RC_A_SADDR + i * F103RC_PAGE_SIZE, (uint16_t *)updataA.updatabuff, F103RC_PAGE_SIZE);
-    //     }
+    delay_ms(10);
+    // 检查串口接收环形缓冲区是否有新数据（读指针 != 写指针）
+    if (ota_uart_cb.URxDataOUT != ota_uart_cb.URxDataIN) {
+        // 调用事件处理函数解析数据包
+        bootloader_event(ota_uart_cb.URxDataOUT->start, ota_uart_cb.URxDataOUT->end - ota_uart_cb.URxDataOUT->start + 1);
+        
+        // 移动读指针到下一个数据块
+        ota_uart_cb.URxDataOUT++;
+        
+        // 如果读指针到达缓冲区末尾，回绕到开头
+        if (ota_uart_cb.URxDataOUT == ota_uart_cb.URxDataEND) {
+            ota_uart_cb.URxDataOUT = (UCB_URXBuffptr *)&ota_uart_cb.URxDataPtr[0];
+        }
+    }
 
-    //     if (OTA_Info.firlen[updataA.w25q64_block_num] % 1024 != 0) {
-    //       norflash_read(updataA.updatabuff, i * 2048 + updataA.w25q64_block_num * 64 * 1024, OTA_Info.firlen[updataA.w25q64_block_num] % 1024);
-    //       stmflash_write(F103RC_A_SADDR + i * F103RC_PAGE_SIZE, (uint16_t *)updataA.updatabuff, OTA_Info.firlen[updataA.w25q64_block_num] % 1024);
-    //     }
+    // 处理 Xmodem 协议握手（等待连接状态）
+    if (boot_state_flag & IAP_XMODEMC_FLAG) {
+        // 定时发送字符 'C' 请求进入 CRC 校验模式（假设此处循环约10ms一次，100次即1秒）
+        if (updataA.xmodemTimer >= 100) {
+            printf("C\r\n");
+            updataA.xmodemTimer = 0;
+        }
+        updataA.xmodemTimer++;
+    }
 
-    //     if (updataA.w25q64_block_num == 0) {
-    //       OTA_Info.ota_flag = 0;
-    //       at24cxx_write_otainfo();
-    //     }
-    //     NVIC_SystemReset();
-    //   }
-    //   else {
-    //   printf("长度错误\r\n");
-    //   boot_state_flag &= ~(UPDATA_A_FLAG);      
-    //   } 
-    // }
-    
-    // if (ota_uart_cb.URxDataOUT != ota_uart_cb.URxDataIN) {
-    //   printf("本次接收的字节数为%d\r\n", ota_uart_cb.URxDataOUT->end - ota_uart_cb.URxDataOUT->start + 1);
-    //   for (int i = 0; i < (ota_uart_cb.URxDataOUT->end - ota_uart_cb.URxDataOUT->start + 1); i++) {
-    //     printf("%c", ota_uart_cb.URxDataOUT->start[i]);
-    //   }
-    //   printf("\r\n");
-    //   ota_uart_cb.URxDataOUT++;
-    //   if (ota_uart_cb.URxDataOUT == ota_uart_cb.URxDataEND) {
-    //     ota_uart_cb.URxDataOUT = &ota_uart_cb.URxDataPtr[0];
-    //   }
-    // }
+    // 检查是否有固件搬运标志（从外部 Flash 更新到内部 Flash）
+    if ((boot_state_flag & UPDATA_A_FLAG) != 0) {
+        printf("长度:%d字节\r\n", OTA_Info.firlen[updataA.w25q64_block_num]);
+        
+        // 校验固件长度是否为 4 字节对齐（STM32 Flash 写入要求必须半字/字对齐）
+        if (OTA_Info.firlen[updataA.w25q64_block_num] % 4 == 0) {
+            
+            // 循环搬运完整的 Flash 页
+            for (i = 0; i < OTA_Info.firlen[updataA.w25q64_block_num] / F103RC_PAGE_SIZE; i++) {
+                // 从外部 Flash 读取一页数据
+                norflash_read(updataA.updatabuff, i * F103RC_PAGE_SIZE + updataA.w25q64_block_num * 64 * 1024, F103RC_PAGE_SIZE);
+                // 写入到内部 Flash A区
+                stmflash_write(F103RC_A_SADDR + i * F103RC_PAGE_SIZE, (uint16_t *)updataA.updatabuff, F103RC_PAGE_SIZE / 2);
+            }
+
+            // 处理不足一页的剩余数据
+            if (OTA_Info.firlen[updataA.w25q64_block_num] % F103RC_PAGE_SIZE != 0) {
+                // 读取剩余字节
+                norflash_read(updataA.updatabuff, i * F103RC_PAGE_SIZE + updataA.w25q64_block_num * 64 * 1024, OTA_Info.firlen[updataA.w25q64_block_num] % F103RC_PAGE_SIZE);
+                // 写入剩余字节
+                stmflash_write(F103RC_A_SADDR + i * F103RC_PAGE_SIZE, (uint16_t *)updataA.updatabuff, OTA_Info.firlen[updataA.w25q64_block_num] % F103RC_PAGE_SIZE / 2);
+            }
+
+            // 如果是主程序块更新，清除 EEPROM 中的 OTA 标志位
+            if (updataA.w25q64_block_num == 0) {
+                OTA_Info.ota_flag = 0;
+                at24cxx_write_otainfo();
+            }
+            printf("A区更新完毕\r\n");
+            
+            // 系统复位，跳转运行新程序
+            NVIC_SystemReset();
+        }
+        else {
+            printf("长度错误\r\n");
+            // 长度不对齐，清除标志位避免死循环
+            boot_state_flag &= ~(UPDATA_A_FLAG);      
+        } 
+    }
+
 
     /* USER CODE END WHILE */
 

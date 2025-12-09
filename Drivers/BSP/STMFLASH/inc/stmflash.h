@@ -55,7 +55,7 @@
 uint16_t stmflash_read_halfword(uint32_t faddr);                        /* FLASH读半字 */
 void stmflash_read(uint32_t raddr, uint16_t *pbuf, uint16_t length);    /* 从指定地址开始读出指定长度的数据 */
 void stmflash_write(uint32_t waddr, uint16_t *pbuf, uint16_t length);   /* 在FLASH 指定位置, 写入指定长度的数据(自动擦除) */
-
+void stmflash_erase(uint32_t addr, uint8_t pages);
 /* 测试函数 */
 void test_write(uint32_t waddr, uint16_t wdata);
 

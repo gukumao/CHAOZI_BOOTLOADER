@@ -39,8 +39,8 @@
  * @brief 缓冲区管理块指针对
 */
 typedef struct{
-    uint8_t *start;
-    uint8_t *end;
+    uint8_t *volatile start;
+    uint8_t *volatile end;
 }UCB_URXBuffptr;
 
 /**
@@ -55,8 +55,8 @@ typedef struct
     UCB_URXBuffptr *URxDataEND;
 }UCB_CB; 
 
-extern UCB_CB ota_uart_cb;                      // 接收控制块（管理接收逻辑的核心结构体）
-extern uint8_t ota_rxbuff[OTA_RX_SIZE];         // 物理接收缓冲区
+extern volatile UCB_CB ota_uart_cb;                      // 接收控制块（管理接收逻辑的核心结构体）
+extern volatile uint8_t ota_rxbuff[OTA_RX_SIZE];         // 物理接收缓冲区
 
 // 外部接口函数
 void ota_uart_init(uint32_t bandrate);
